@@ -9,6 +9,11 @@ from langchain.schema.messages import HumanMessage, SystemMessage
 from langchain.prompts import PromptTemplate
 from langchain.prompts import ChatPromptTemplate
 
+from typing import List
+from langchain.output_parsers import PydanticOutputParser
+from langchain.pydantic_v1 import BaseModel, Field, validator
+
+
 load_dotenv()
 
 openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -78,3 +83,37 @@ def prompt_chat_ChatPromptTemplate(query:str):
 
     response = chat.invoke(formatted_messages)
     return response
+
+
+# PydanticOutputParser (This metdos just work with openai==0.28.0, not with newest versions)
+@app.post('/OutputParser')
+def OutputParser(query: str):
+    model = OpenAI(model_name="gpt-3.5-turbo", temperature=0.0)
+    class Joke(BaseModel):
+        setup: str = Field(description="question to set up a joke")
+        punchline: str = Field(description="answer to resolve the joke")
+
+        @validator("setup")
+        def question_ends_with_question_mark(cls, field):
+            if field[-1] != "?":
+                raise ValueError("Badly formed question!")
+            return field
+
+    # Set up a PydanticOutputParser
+    parser = PydanticOutputParser(pydantic_object=Joke)
+
+
+    prompt = PromptTemplate(
+        template="Answer the user query.\n{format_instructions}\n{query}\n",
+        input_variables=["query"],
+        partial_variables={"format_instructions": parser.get_format_instructions()},
+    )
+
+    # Combine prompt, model, and parser to get structured output
+    prompt_and_model = prompt | model
+    output = prompt_and_model.invoke({"query": query})
+
+    # Parse the output using the parser
+    parsed_result = parser.invoke(output)
+
+    return parsed_result
