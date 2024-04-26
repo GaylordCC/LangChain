@@ -16,6 +16,7 @@ from langchain.output_parsers import DatetimeOutputParser
 from langchain.chains import LLMChain
 from langchain.document_loaders.csv_loader import CSVLoader
 from langchain.text_splitter import CharacterTextSplitter
+from langchain.embeddings import OpenAIEmbeddings
 
 
 
@@ -214,11 +215,20 @@ def document_ingest_langchain():
     })
     documents = loader.load()
 
-    text_splitter = CharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=0,
-    )
 
-    docs = text_splitter.split_documents(documents)
+    formatted_strings = [
+        f"Page Content: {doc.page_content}"
+        for doc in documents
+    ]
 
-    return docs
+    # Printing each string in the array
+    for string in formatted_strings:
+        print(string)
+
+    # Initialize the model
+    embeddings_model = OpenAIEmbeddings()
+
+    embeddings = embeddings_model.embed_documents(formatted_strings)
+    print(embeddings)
+
+    return ({"docs": formatted_strings})
