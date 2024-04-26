@@ -15,6 +15,9 @@ from langchain.pydantic_v1 import BaseModel, Field, validator
 
 from langchain.output_parsers.json import SimpleJsonOutputParser
 
+from langchain.output_parsers import CommaSeparatedListOutputParser
+
+
 
 load_dotenv()
 
@@ -86,7 +89,7 @@ def prompt_chat_ChatPromptTemplate(query:str):
     return response
 
 
-# PydanticOutputParser (This metdos just work with openai==0.28.0, not with newest versions)
+# Pydantic Output Parser (This metdos just work with openai==0.28.0, not with newest versions)
 @app.post('/OutputParser')
 def OutputParser(query: str):
     model = OpenAI(model_name="gpt-3.5-turbo", temperature=0.0)
@@ -100,7 +103,7 @@ def OutputParser(query: str):
                 raise ValueError("Badly formed question!")
             return field
 
-    # Set up a PydanticOutputParser
+    # Set up a Pydantic Output Parser
     parser = PydanticOutputParser(pydantic_object=Joke)
 
 
@@ -120,7 +123,7 @@ def OutputParser(query: str):
     return parsed_result
 
 
-# SimpleJsonOutputParser
+# Simple Json Output Parser
 @app.post('/SimpleJson')
 def simple_json_output_parser(query: str):
     model = OpenAI(model_name="gpt-3.5-turbo", temperature=0.0)
@@ -141,3 +144,30 @@ def simple_json_output_parser(query: str):
 
 
     return result_list
+
+
+# Comma Separated List Output Parser
+@app.post('/CommaSeparated')
+def comma_separated(query: str):
+    model = OpenAI()
+
+    # Initialize the parser
+    output_parser = CommaSeparatedListOutputParser()
+
+    # Create format instructions
+    format_instructions = output_parser.get_format_instructions()
+
+    # Create a prompt to request a list
+    prompt = PromptTemplate(
+        template="List five {subject}. \n{format_instructions}",
+        input_variables=["subject"],
+        partial_variables={"format_instructions": format_instructions}
+    )
+
+    # Generate the output
+    output =model(prompt.format(subject=query))
+
+    # Parse the output using the parser
+    parsed_result = output_parser.parse(output)
+
+    return parsed_result
