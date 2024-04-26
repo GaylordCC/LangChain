@@ -13,6 +13,8 @@ from typing import List
 from langchain.output_parsers import PydanticOutputParser
 from langchain.pydantic_v1 import BaseModel, Field, validator
 
+from langchain.output_parsers.json import SimpleJsonOutputParser
+
 
 load_dotenv()
 
@@ -25,7 +27,6 @@ def helth():
     return "Hello World"
 
 # LLMs (Large Language Models)
-
 @app.post('/llm-chat')
 def llm_chat(query: str):
    llm = OpenAI()
@@ -48,7 +49,7 @@ def openai_chat(query: str):
 
 # Simple Prompts (PromptTemplate)
 @app.post('/prompt-chat-PromptTemplate')
-def prompt_chat_PromptTemplate():
+def prompt_chat_PromptTemplate(query: str):
     chat = ChatOpenAI()
     prompt_template = PromptTemplate.from_template(
         "Tell me an {adjective} explanation about {content}"
@@ -56,7 +57,7 @@ def prompt_chat_PromptTemplate():
 
     filled_prompt = prompt_template.format(
         adjective="interesting",
-        content="LLM"
+        content=query
     )
     
     response = chat.invoke(filled_prompt)
@@ -71,7 +72,7 @@ def prompt_chat_ChatPromptTemplate(query:str):
         [
             ("system", "You are a helpful AI bot. Your name is {name}."),
             ("human", "Hello. how are you doing?"),
-            ("ai", "I'm doing wll, thanks!"),
+            ("ai", "I'm doing well, thanks!"),
             ("human", "{user_input}"),
         ]
     )
@@ -90,8 +91,8 @@ def prompt_chat_ChatPromptTemplate(query:str):
 def OutputParser(query: str):
     model = OpenAI(model_name="gpt-3.5-turbo", temperature=0.0)
     class Joke(BaseModel):
-        setup: str = Field(description="question to set up a joke")
-        punchline: str = Field(description="answer to resolve the joke")
+        setup: str = Field(description="question to set up an doubt")
+        punchline: str = Field(description="answer to resolve the doubt")
 
         @validator("setup")
         def question_ends_with_question_mark(cls, field):
@@ -117,3 +118,26 @@ def OutputParser(query: str):
     parsed_result = parser.invoke(output)
 
     return parsed_result
+
+
+# SimpleJsonOutputParser
+@app.post('/SimpleJson')
+def simple_json_output_parser(query: str):
+    model = OpenAI(model_name="gpt-3.5-turbo", temperature=0.0)
+
+    # Create a JSON prompt
+    json_prompt = PromptTemplate.from_template(
+        "Return a JSON with 'birthday'and 'birthplace' that answer the following question: {question}"
+    )
+
+    # Initialize the JSON parser
+    json_parser = SimpleJsonOutputParser()
+
+    # Create a chain with the prompt, model, and parser
+    json_chain = json_prompt | model | json_parser
+
+    # Stream through the results
+    result_list = list(json_chain.stream({"question": query}))
+
+
+    return result_list
