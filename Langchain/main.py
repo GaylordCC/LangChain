@@ -14,6 +14,7 @@ from langchain.output_parsers.json import SimpleJsonOutputParser
 from langchain.output_parsers import CommaSeparatedListOutputParser
 from langchain.output_parsers import DatetimeOutputParser
 from langchain.chains import LLMChain
+from langchain.document_loaders.csv_loader import CSVLoader
 
 
 
@@ -197,3 +198,18 @@ def datetime_output_parser(query: str):
     parsed_result = output_parser.parse(output)
 
     return parsed_result
+
+
+# Document Ingest
+@app.post('/document-ingest-langchain')
+def document_ingest_langchain():
+    loader = CSVLoader(
+        file_path='./keywords_rotobot.csv',
+        csv_args={
+            'delimiter': ';',
+            'quotechar': '"',
+            'fieldnames': ["keyword", "metadata"]
+    })
+    document = loader.load()
+
+    return document
