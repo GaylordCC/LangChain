@@ -15,6 +15,8 @@ from langchain.output_parsers import CommaSeparatedListOutputParser
 from langchain.output_parsers import DatetimeOutputParser
 from langchain.chains import LLMChain
 from langchain.document_loaders.csv_loader import CSVLoader
+from langchain.text_splitter import CharacterTextSplitter
+
 
 
 
@@ -210,6 +212,13 @@ def document_ingest_langchain():
             'quotechar': '"',
             'fieldnames': ["keyword", "metadata"]
     })
-    document = loader.load()
+    documents = loader.load()
 
-    return document
+    text_splitter = CharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=0,
+    )
+
+    docs = text_splitter.split_documents(documents)
+
+    return docs
