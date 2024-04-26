@@ -5,17 +5,15 @@ import os
 from langchain.llms import OpenAI
 from langchain.chat_models import ChatOpenAI
 from langchain.schema.messages import HumanMessage, SystemMessage
-
 from langchain.prompts import PromptTemplate
 from langchain.prompts import ChatPromptTemplate
-
 from typing import List
 from langchain.output_parsers import PydanticOutputParser
 from langchain.pydantic_v1 import BaseModel, Field, validator
-
 from langchain.output_parsers.json import SimpleJsonOutputParser
-
 from langchain.output_parsers import CommaSeparatedListOutputParser
+from langchain.output_parsers import DatetimeOutputParser
+from langchain.chains import LLMChain
 
 
 
@@ -168,6 +166,34 @@ def comma_separated(query: str):
     output =model(prompt.format(subject=query))
 
     # Parse the output using the parser
+    parsed_result = output_parser.parse(output)
+
+    return parsed_result
+
+# Datetime Output Parser
+@app.post('/')
+def datetime_output_parser(query: str):
+    # Initialize the DatetimeOutputParser
+    output_parser = DatetimeOutputParser()
+
+    # Create a prompt with format instructions
+    template = """
+    Answer the user's question:
+    {question}
+    {format_intructions}
+    """
+    prompt = PromptTemplate.from_template(
+        template,
+        partial_variables={"format_intructions": output_parser.get_format_instructions()}, 
+    )
+
+    # Create a chain with the prompt and language model
+    chain = LLMChain(prompt=prompt, llm=OpenAI())
+
+    # Run the chain
+    output = chain.run(query)
+
+    # Parse the output using the datetime parser
     parsed_result = output_parser.parse(output)
 
     return parsed_result
