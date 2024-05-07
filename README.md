@@ -13,6 +13,7 @@ pip install -r requirements.txt
 
 # Run the server with: 
 uvicorn Langchain.main:app --reload
+uvicorn Langchain.main_02:app --reload
 
 
 # Open the project in the browser
